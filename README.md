@@ -1,6 +1,6 @@
 # CloudFlare Argo Tunnel 一键配置脚本
 
-白嫖CloudFlare的Argo Tunnel隧道，实现内网穿透！！！目前脚本只支持http协议的穿透
+白嫖CloudFlare的Argo Tunnel隧道，实现内网穿透！！！目前脚本支持http协议和tcp协议（需要配合Windows或Mac OS的cloudflared客户端来使用隧道）的穿透
 
 ## 使用方法
 
