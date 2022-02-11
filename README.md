@@ -10,15 +10,24 @@ wget -N https://cdn.jsdelivr.net/gh/Misaka-blog/argo-tunnel-script@master/argo.s
 
 快捷方式 `bash argo.sh`
 
-## CloudFlare Argo Tunnel 客户端下载地址
+## CloudFlare Argo Tunnel TCP连接教程
 
-https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation
+1. 下载并安装[cloudflared客户端](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation)
+2. 命令行输入以下指令
+
+```bat
+cloudflared access tcp --hostname [绑定到的域名] --listener [本地监听地址]
+```
+
+例如：`cloudflared access tcp --hostname cgss.example.com --listener 127.0.0.1:35565`，将绑定到cgss.example.com的隧道映射到本地的35565端口
 
 ## 参考资料
 
 CloudFlare Argo Tunnel: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation
 
 苍穹の下 · SKY的Blog：https://www.blueskyxn.com/202102/4176.html
+
+Booker——知识博客：https://www.dll3.cn/534.html
 
 ## 交流群
 
