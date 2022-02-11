@@ -36,20 +36,17 @@ done
 
 [[ -z $SYSTEM ]] && red "不支持VPS的当前系统，请使用主流的操作系统" && exit 1
 
+[ $ARCH == "s390x" ] && red "不支持VPS的当前系统架构，请换用主流的VPS架构" && exit 1
+[ $ARCH = "x86_64" ] && ARCH="amd64"
+
 ## 统计脚本运行次数
 COUNT=$(curl -sm1 "https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fcdn.jsdelivr.net%2Fgh%2FMisaka-blog%2Fargo-tunnel-script%40master%2Fargo.sh&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false" 2>&1) &&
 TODAY=$(expr "$COUNT" : '.*\s\([0-9]\{1,\}\)\s/.*')
 TOTAL=$(expr "$COUNT" : '.*/\s\([0-9]\{1,\}\)\s.*')
 
 install(){
-    if [[ -n $(cloudflared -help) ]]; then
-        red "检测到已安装CloudFlare Argo Tunnel，无需重复安装！！"
-        exit 0
-    fi
+    [[ -n $(cloudflared -help) ]] && red "检测到已安装CloudFlare Argo Tunnel，无需重复安装！！" && exit 1
     ${PACKAGE_UPDATE[int]}
-    if [ $ARCH = "x86_64" ]; then
-        ARCH="amd64"
-    fi
     if [ $RELEASE == "CentOS" ]; then
         wget -N https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}.rpm
         rpm -i cloudflared-linux-${ARCH}.rpm
@@ -59,27 +56,23 @@ install(){
     fi
 }
 
-tryTunnel(){
-    if [[ -z $(cloudflared -help) ]]; then
-        red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！"
-        exit 0
-    fi
+tryHTTPTunnel(){
+    [[ -z $(cloudflared -help) ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
     read -p "请输入你需要穿透的http端口号（默认80）：" httpPort
-    if [ -z $httpPort ]; then
-        httpPort=80
-    fi
-    cloudflared tunnel --url localhost:$httpPort
+    [ -z $httpPort ] && httpPort=80
+    cloudflared tunnel --url http://127.0.0.1:$httpPort
+}
+
+tryTCPTunnel(){
+    [[ -z $(cloudflared -help) ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+    read -p "请输入你需要穿透的tcp端口号（默认80）：" tcpPort
+    [ -z $tcpPort ] && tcpPort=80
+    cloudflared tunnel --url tcp://127.0.0.1:$tcpPort
 }
 
 cfargoLogin(){
-    if [[ -z $(cloudflared -help) ]]; then
-        red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！"
-        exit 0
-    fi
-    if [[ -f /root/.cloudflared/cert.pem ]]; then
-        red "已登录CloudFlare Argo Tunnel客户端，无需重复登录！！！"
-        exit 0
-    fi
+    [[ -z $(cloudflared -help) ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+    [[ -f /root/.cloudflared/cert.pem ]] && red "已登录CloudFlare Argo Tunnel客户端，无需重复登录！！！" && exit 1
     green "请访问下方提示的网址，登录自己的CloudFlare账号"
     green "然后授权自己的域名给CloudFlare Argo Tunnel即可"
     cloudflared tunnel login
@@ -102,14 +95,8 @@ tunnelConfig(){
 }
 
 tunnelSelection(){
-    if [[ -z $(cloudflared -help) ]]; then
-        red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！"
-        exit 0
-    fi
-    if [ ! -f /root/.cloudflared/cert.pem ]; then
-        red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！"
-        exit 0
-    fi
+    [[ -z $(cloudflared -help) ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+    [ ! -f /root/.cloudflared/cert.pem ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
     echo "1. 创建隧道"
     echo "2. 删除隧道"
     echo "3. 配置隧道"
@@ -120,25 +107,26 @@ tunnelSelection(){
         2 ) deleteTunnel ;;
         3 ) tunnelConfig ;;
         4 ) cloudflared tunnel list ;;
-        0 ) exit 0
+        0 ) exit 1
     esac
 }
 
-runTunnel(){
-    if [[ -z $(cloudflared -help) ]]; then
-        red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！"
-        exit 0
-    fi
-    if [ ! -f /root/.cloudflared/cert.pem ]; then
-        red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！"
-        exit 0
-    fi
+runHTTPTunnel(){
+    [[ -z $(cloudflared -help) ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+    [ ! -f /root/.cloudflared/cert.pem ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
     read -p "请输入需要运行的隧道名称：" tunnelName
     read -p "请输入你需要穿透的http端口号（默认80）：" httpPort
-    if [ -z $httpPort ]; then
-        httpPort=80
-    fi
-    cloudflared tunnel run --url localhost:$httpPort $tunnelName
+    [ -z $httpPort ] && httpPort=80
+    cloudflared tunnel run --url http://127.0.0.1:$httpPort $tunnelName
+}
+
+runTCPTunnel(){
+    [[ -z $(cloudflared -help) ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+    [ ! -f /root/.cloudflared/cert.pem ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
+    read -p "请输入需要运行的隧道名称：" tunnelName
+    read -p "请输入你需要穿透的tcp端口号（默认80）：" tcpPort
+    [ -z $tcpPort ] && tcpPort=80
+    cloudflared tunnel run --url tcp://127.0.0.1:$tcpPort $tunnelName
 }
 
 menu(){
@@ -155,23 +143,27 @@ menu(){
     yellow "今日运行次数：$TODAY   总共运行次数：$TOTAL"
     echo "            "
     echo "1. 安装CloudFlare Argo Tunnel客户端"
-    echo "2. 体验CloudFlare Argo Tunnel隧道"
-    echo "3. 登录CloudFlare Argo Tunnel客户端"
-    echo "4. 创建、删除、配置和列出隧道"
-    echo "5. 运行隧道"
-    echo "6. 卸载CloudFlare Argo Tunnel客户端"
+    echo "2. 体验CloudFlare Argo Tunnel HTTP隧道"
+    echo "3. 体验CloudFlare Argo Tunnel TCP隧道"
+    echo "4. 登录CloudFlare Argo Tunnel客户端"
+    echo "5. 创建、删除、配置和列出隧道"
+    echo "6. 运行HTTP隧道"
+    echo "7. 运行TCP隧道"
+    echo "8. 卸载CloudFlare Argo Tunnel客户端"
     echo "9. 更新脚本"
     echo "0. 退出脚本"
     read -p "请输入选项:" menuNumberInput
     case "$menuNumberInput" in
         1 ) install ;;
-        2 ) tryTunnel ;;
-        3 ) cfargoLogin ;;
-        4 ) tunnelSelection ;;
-        5 ) runTunnel ;;
-        6 ) ${PACKAGE_REMOVE[int]} cloudflared ;;
+        2 ) tryHTTPTunnel ;;
+        3 ) tryTCPTunnel ;;
+        4 ) cfargoLogin ;;
+        5 ) tunnelSelection ;;
+        6 ) runHTTPTunnel ;;
+        7 ) runTCPTunnel ;;
+        8 ) ${PACKAGE_REMOVE[int]} cloudflared ;;
         9 ) wget -N https://raw.githubusercontents.com/Misaka-blog/argo-tunnel-script/master/argo.sh && bash argo.sh ;;
-        0 ) exit 0
+        0 ) exit 1
     esac
 }
 
