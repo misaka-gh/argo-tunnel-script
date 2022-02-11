@@ -10,6 +10,10 @@ wget -N https://cdn.jsdelivr.net/gh/Misaka-blog/argo-tunnel-script@master/argo.s
 
 快捷方式 `bash argo.sh`
 
+## CloudFlare Argo Tunnel 客户端下载地址
+
+https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation
+
 ## 参考资料
 
 CloudFlare Argo Tunnel: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation
