@@ -1,6 +1,6 @@
 # CloudFlare Argo Tunnel 一键配置脚本
 
-说明待更新！！
+白嫖CloudFlare的Argo Tunnel隧道，实现内网穿透！！！
 
 ## 使用方法
 
