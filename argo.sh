@@ -48,7 +48,7 @@ back2menu(){
     green "所选操作执行完成"
     read -p "请输入“y”回到主菜单，或按任意键退出脚本：" back2menuInput
     case "$back2menuInput" in
-        y ) menu
+        y ) menu ;;
     esac
 }
 
