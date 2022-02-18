@@ -21,6 +21,8 @@ PACKAGE_REMOVE=("apt -y remove" "apt -y remove" "yum -y remove" "yum -y remove")
 
 # 判断系统CPU架构
 cpuArch=`uname -m`
+
+# 判断cloudflared状态
 cloudflaredStatus="未安装"
 loginStatus="未登录"
 
@@ -73,7 +75,8 @@ checkStatus(){
 
 installCloudFlared(){
     [ $cloudflaredStatus == "已安装" ] && red "检测到已安装CloudFlare Argo Tunnel，无需重复安装！！" && exit 1
-	if [ $RELEASE == "CentOS" ]; then
+	if [ ${RELEASE[int]} == "CentOS" ]; then
+        [ $cpuArch == "amd64" ] && cpuArch="x86_64"
 		wget -N https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpuArch.rpm
 		rpm -i cloudflared-linux-$cpuArch.rpm
 	else
@@ -168,9 +171,11 @@ menu(){
     echo "3. 配置Argo Tunnel隧道"
     echo "4. 列出Argo Tunnel隧道"
     echo "5. 运行Argo Tunnel隧道"
-    echo "6. 卸载CloudFlared客户端"
+    echo "6. 删除Argo Tunnel隧道"
+    echo "7. 卸载CloudFlared客户端"
     echo "9. 更新脚本"
     echo "0. 退出脚本"
+    echo "          "
     read -p "请输入选项:" menuNumberInput
     case "$menuNumberInput" in
         1 ) installCloudFlared ;;
@@ -178,7 +183,8 @@ menu(){
         3 ) makeTunnel ;;
         4 ) listTunnel ;;
         5 ) runTunnel ;;
-        6 ) uninstallCloudFlared ;;
+        6 ) deleteTunnel ;;
+        7 ) uninstallCloudFlared ;;
         9 ) wget -N https://raw.githubusercontent.com/Misaka-blog/argo-tunnel-script/master/argo.sh && bash argo.sh ;;
         0 ) exit 1 ;;
     esac
