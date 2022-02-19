@@ -1,6 +1,6 @@
 # CloudFlare Argo Tunnel 一键配置脚本
 
-白嫖CloudFlare的Argo Tunnel隧道，实现内网穿透！！！目前脚本支持Argo Tunnel[支持的协议](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configuration/ingress)的穿透，并保存为CloudFlare Argo Tunnel的配置文件
+白嫖CloudFlare的Argo Tunnel隧道，实现内网穿透！！！目前脚本支持Argo Tunnel[支持的协议](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configuration/ingress)的穿透，并保存为CloudFlare Argo Tunnel的配置文件；默认使用Screen运行隧道，让你断开SSH也可以无限链接！！
 
 ## 使用方法
 
