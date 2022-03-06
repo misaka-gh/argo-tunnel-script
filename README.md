@@ -7,7 +7,7 @@ Use CloudFlare's Argo Tunnel to achieve intranet penetration!
 ## 使用方法
 
 ```shell
-wget -N https://github.com/Misaka-blog/argo-tunnel-script/raw/master/argo.sh && bash argo.sh
+wget -N https://raw.githubusercontent.com/Misaka-blog/argo-tunnel-script/master/argo.sh && bash argo.sh
 ```
 
 快捷方式 `bash argo.sh`
