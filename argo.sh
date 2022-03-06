@@ -50,11 +50,11 @@ TOTAL=$(expr "$COUNT" : '.*/\s\([0-9]\{1,\}\)\s.*')
 
 archAffix() {
 	case "$cpuArch" in
-        i686 | i386) cpuArch='386' ;;
-        x86_64 | amd64) cpuArch='amd64' ;;
-        armv5tel | arm6l | armv7 | armv7l) cpuArch='arm' ;;
-        armv8 | aarch64) cpuArch='aarch64' ;;
-        *) red "不支持的CPU架构！" && exit 1 ;;
+		i686 | i386) cpuArch='386' ;;
+		x86_64 | amd64) cpuArch='amd64' ;;
+		armv5tel | arm6l | armv7 | armv7l) cpuArch='arm' ;;
+		armv8 | aarch64) cpuArch='aarch64' ;;
+		*) red "不支持的CPU架构！" && exit 1 ;;
 	esac
 }
 
@@ -62,8 +62,8 @@ back2menu() {
 	green "所选操作执行完成"
 	read -p "请输入“y”退出，或按任意键回到主菜单：" back2menuInput
 	case "$back2menuInput" in
-        y) exit 1 ;;
-        *) menu ;;
+	y) exit 1 ;;
+	*) menu ;;
 	esac
 }
 
@@ -140,7 +140,7 @@ listTunnel() {
 runTunnel() {
 	[ $cloudflaredStatus == "未安装" ] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
 	[ $loginStatus == "未登录" ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
-	[[ -z $(screen -help 2>/dev/null) ]] && ${PACKAGE_UPDATE[int]} && ${PACKAGE_INSTALL[int]} screen
+	[[ -z $(type -P screen) ]] && ${PACKAGE_UPDATE[int]} && ${PACKAGE_INSTALL[int]} screen
 	read -p "请复制粘贴配置文件的位置（例：/root/tunnel.yml）：" ymlLocation
 	read -p "请输入创建Screen会话的名字：" screenName
 	screen -USdm $screenName cloudflared tunnel --config $ymlLocation run
@@ -151,7 +151,7 @@ runTunnel() {
 killTunnel() {
 	[ $cloudflaredStatus == "未安装" ] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
 	[ $loginStatus == "未登录" ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
-	[[ -z $(screen -help 2>/dev/null) ]] && ${PACKAGE_UPDATE[int]} && ${PACKAGE_INSTALL[int]} screen
+	[[ -z $(type -P screen) ]] && ${PACKAGE_UPDATE[int]} && ${PACKAGE_INSTALL[int]} screen
 	read -p "请输入需要删除的Screen会话名字：" screenName
 	screen -S $screenName -X quit
 	green "Screen会话停止成功！"
@@ -163,6 +163,20 @@ deleteTunnel() {
 	[ $loginStatus == "未登录" ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
 	read -p "请输入需要删除的隧道名称：" tunnelName
 	cloudflared tunnel delete $tunnelName
+	back2menu
+}
+
+argoCert() {
+	[ $cloudflaredStatus == "未安装" ] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+	[ $loginStatus == "未登录" ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
+	sed -n "1, 5p" /root/.cloudflared/cert.pem >>/root/private.key
+	sed -n "6, 24p" /root/.cloudflared/cert.pem >>/root/cert.crt
+	green "CloudFlare Argo Tunnel证书提取成功！"
+	yellow "证书crt路径如下：/root/cert.crt"
+	yellow "私钥key路径如下：/root/private.key"
+	green "使用证书提示："
+	yellow "1. 当前证书只能使用于CF Argo Tunnel授权过的域名"
+	yellow "2. 在需要使用证书的服务使用Argo Tunnel的域名，必须使用其证书"
 	back2menu
 }
 
@@ -190,22 +204,24 @@ menu() {
 	echo "5. 运行Argo Tunnel隧道"
 	echo "6. 停止Argo Tunnel隧道"
 	echo "7. 删除Argo Tunnel隧道"
-	echo "8. 卸载CloudFlared客户端"
-	echo "9. 更新脚本"
+	echo "8. 获取Argo Tunnel证书"
+	echo "9. 卸载CloudFlared客户端"
+	echo "10. 更新脚本"
 	echo "0. 退出脚本"
 	echo "          "
 	read -p "请输入选项:" menuNumberInput
 	case "$menuNumberInput" in
-        1) installCloudFlared ;;
-        2) loginCloudFlared ;;
-        3) makeTunnel ;;
-        4) listTunnel ;;
-        5) runTunnel ;;
-        6) killTunnel ;;
-        7) deleteTunnel ;;
-        8) uninstallCloudFlared ;;
-        9) wget -N https://raw.githubusercontent.com/Misaka-blog/argo-tunnel-script/master/argo.sh && bash argo.sh ;;
-        *) exit 1 ;;
+		1) installCloudFlared ;;
+		2) loginCloudFlared ;;
+		3) makeTunnel ;;
+		4) listTunnel ;;
+		5) runTunnel ;;
+		6) killTunnel ;;
+		7) deleteTunnel ;;
+		8) argoCert ;;
+		9) uninstallCloudFlared ;;
+		10) wget -N https://raw.githubusercontent.com/Misaka-blog/argo-tunnel-script/master/argo.sh && bash argo.sh ;;
+		*) exit 1 ;;
 	esac
 }
 
