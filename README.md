@@ -12,7 +12,7 @@ wget -N https://raw.githubusercontent.com/Misaka-blog/argo-tunnel-script/master/
 
 快捷方式 `bash argo.sh`
 
-## CloudFlare Argo Tunnel TCP连接教程
+## CloudFlare Argo Tunnel TCP 协议连接教程
 
 1. 下载并安装[cloudflared客户端](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation)
 2. 命令行输入以下指令
