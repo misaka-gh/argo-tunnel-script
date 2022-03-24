@@ -45,16 +45,16 @@ done
 
 ## 统计脚本运行次数
 COUNT=$(curl -sm1 "https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fcdn.jsdelivr.net%2Fgh%2FMisaka-blog%2Fargo-tunnel-script%40master%2Fargo.sh&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false" 2>&1) &&
-TODAY=$(expr "$COUNT" : '.*\s\([0-9]\{1,\}\)\s/.*')
+	TODAY=$(expr "$COUNT" : '.*\s\([0-9]\{1,\}\)\s/.*')
 TOTAL=$(expr "$COUNT" : '.*/\s\([0-9]\{1,\}\)\s.*')
 
 archAffix() {
 	case "$cpuArch" in
-		i686 | i386) cpuArch='386' ;;
-		x86_64 | amd64) cpuArch='amd64' ;;
-		armv5tel | arm6l | armv7 | armv7l) cpuArch='arm' ;;
-		armv8 | aarch64) cpuArch='aarch64' ;;
-		*) red "不支持的CPU架构！" && exit 1 ;;
+	i686 | i386) cpuArch='386' ;;
+	x86_64 | amd64) cpuArch='amd64' ;;
+	armv5tel | arm6l | armv7 | armv7l) cpuArch='arm' ;;
+	armv8 | aarch64) cpuArch='aarch64' ;;
+	*) red "不支持的CPU架构！" && exit 1 ;;
 	esac
 }
 
@@ -75,7 +75,7 @@ checkStatus() {
 }
 
 installCloudFlared() {
-	[ $cloudflaredStatus == "已安装" ] && red "检测到已安装CloudFlare Argo Tunnel，无需重复安装！！" && exit 1
+	[ $cloudflaredStatus == "已安装" ] && red "检测到已安装并登录CloudFlare Argo Tunnel，无需重复安装！！" && exit 1
 	if [ ${RELEASE[int]} == "CentOS" ]; then
 		[ $cpuArch == "amd64" ] && cpuArch="x86_64"
 		wget -N https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpuArch.rpm
@@ -85,6 +85,9 @@ installCloudFlared() {
 		wget -N https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpuArch.deb
 		dpkg -i cloudflared-linux-$cpuArch.deb
 	fi
+	green "请访问下方提示的网址，登录自己的CloudFlare账号"
+	green "然后授权自己的域名给CloudFlare Argo Tunnel即可"
+	cloudflared tunnel login
 	back2menu
 }
 
@@ -93,14 +96,6 @@ uninstallCloudFlared() {
 	${PACKAGE_REMOVE[int]} cloudflared
 	rm -rf /root/.cloudflared
 	yellow "CloudFlared 客户端已卸载成功"
-}
-
-loginCloudFlared() {
-	[ $loginStatus == "已登录" ] && red "已登录CloudFlare Argo Tunnel客户端，无需重复登录！！！" && exit 1
-	green "请访问下方提示的网址，登录自己的CloudFlare账号"
-	green "然后授权自己的域名给CloudFlare Argo Tunnel即可"
-	cloudflared tunnel login
-	back2menu
 }
 
 makeTunnel() {
@@ -197,30 +192,28 @@ menu() {
 	green "CloudFlared 客户端状态：$cloudflaredStatus"
 	green "账户登录状态：$loginStatus"
 	echo "            "
-	echo "1. 安装CloudFlared客户端"
-	echo "2. 登录CloudFlared客户端"
-	echo "3. 配置Argo Tunnel隧道"
-	echo "4. 列出Argo Tunnel隧道"
-	echo "5. 运行Argo Tunnel隧道"
-	echo "6. 停止Argo Tunnel隧道"
-	echo "7. 删除Argo Tunnel隧道"
-	echo "8. 获取Argo Tunnel证书"
-	echo "9. 卸载CloudFlared客户端"
-	echo "10. 更新脚本"
+	echo "1. 安装并登录CloudFlared客户端"
+	echo "2. 配置Argo Tunnel隧道"
+	echo "3. 列出Argo Tunnel隧道"
+	echo "4. 运行Argo Tunnel隧道"
+	echo "5. 停止Argo Tunnel隧道"
+	echo "6. 删除Argo Tunnel隧道"
+	echo "7. 获取Argo Tunnel证书"
+	echo "8. 卸载CloudFlared客户端"
+	echo "9. 更新脚本"
 	echo "0. 退出脚本"
 	echo "          "
 	read -p "请输入选项:" menuNumberInput
 	case "$menuNumberInput" in
 		1) installCloudFlared ;;
-		2) loginCloudFlared ;;
-		3) makeTunnel ;;
-		4) listTunnel ;;
-		5) runTunnel ;;
-		6) killTunnel ;;
-		7) deleteTunnel ;;
-		8) argoCert ;;
-		9) uninstallCloudFlared ;;
-		10) wget -N https://raw.githubusercontent.com/Misaka-blog/argo-tunnel-script/master/argo.sh && bash argo.sh ;;
+		2) makeTunnel ;;
+		3) listTunnel ;;
+		4) runTunnel ;;
+		5) killTunnel ;;
+		6) deleteTunnel ;;
+		7) argoCert ;;
+		8) uninstallCloudFlared ;;
+		9) wget -N https://raw.githubusercontent.com/Misaka-blog/argo-tunnel-script/master/argo.sh && bash argo.sh ;;
 		*) exit 1 ;;
 	esac
 }
