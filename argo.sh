@@ -50,11 +50,11 @@ TOTAL=$(expr "$COUNT" : '.*/\s\([0-9]\{1,\}\)\s.*')
 
 archAffix() {
 	case "$cpuArch" in
-	i686 | i386) cpuArch='386' ;;
-	x86_64 | amd64) cpuArch='amd64' ;;
-	armv5tel | arm6l | armv7 | armv7l) cpuArch='arm' ;;
-	armv8 | aarch64) cpuArch='aarch64' ;;
-	*) red "不支持的CPU架构！" && exit 1 ;;
+		i686 | i386) cpuArch='386' ;;
+		x86_64 | amd64) cpuArch='amd64' ;;
+		armv5tel | arm6l | armv7 | armv7l) cpuArch='arm' ;;
+		armv8 | aarch64) cpuArch='aarch64' ;;
+		*) red "不支持的CPU架构！" && exit 1 ;;
 	esac
 }
 
@@ -62,8 +62,8 @@ back2menu() {
 	green "所选操作执行完成"
 	read -p "请输入“y”退出，或按任意键回到主菜单：" back2menuInput
 	case "$back2menuInput" in
-	y) exit 1 ;;
-	*) menu ;;
+		y) exit 1 ;;
+		*) menu ;;
 	esac
 }
 
@@ -80,10 +80,12 @@ installCloudFlared() {
 		[ $cpuArch == "amd64" ] && cpuArch="x86_64"
 		wget -N https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpuArch.rpm
 		rpm -i cloudflared-linux-$cpuArch.rpm
+		rm -f cloudflared-linux-$cpuArch.rpm
 	else
 		[ $cpuArch == "aarch64" ] && cpuArch="arm64"
 		wget -N https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpuArch.deb
 		dpkg -i cloudflared-linux-$cpuArch.deb
+		rm -f cloudflared-linux-$cpuArch.deb
 	fi
 	green "请访问下方提示的网址，登录自己的CloudFlare账号"
 	green "然后授权自己的域名给CloudFlare Argo Tunnel即可"
