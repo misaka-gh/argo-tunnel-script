@@ -42,11 +42,29 @@ for ((int = 0; int < ${#REGEX[@]}; int++)); do
 done
 
 [[ -z $SYSTEM ]] && red "不支持VPS的当前系统，请使用主流的操作系统" && exit 1
+[[ -z $(type -P curl) ]] && ${PACKAGE_UPDATE[int} && ${PACKAGE_INSTALL[int]} curl
 
 ## 统计脚本运行次数
 COUNT=$(curl -sm1 "https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fcdn.jsdelivr.net%2Fgh%2FMisaka-blog%2Fargo-tunnel-script%40master%2Fargo.sh&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false" 2>&1) &&
 TODAY=$(expr "$COUNT" : '.*\s\([0-9]\{1,\}\)\s/.*')
 TOTAL=$(expr "$COUNT" : '.*/\s\([0-9]\{1,\}\)\s.*')
+
+checkCentOS8() {
+	if [[ -n $(cat /etc/os-release | grep "CentOS Linux 8") ]]; then
+		yellow "检测到当前VPS系统为CentOS 8，是否升级为CentOS Stream 8以确保软件包正常安装？"
+		read -p "请输入选项 [y/n]：" comfirmCentOSStream
+		if [[ $comfirmCentOSStream == "y" ]]; then
+			yellow "正在为你升级到CentOS Stream 8，大概需要10-30分钟的时间"
+			sleep 1
+			sed -i -e "s|releasever|releasever-stream|g" /etc/yum.repos.d/CentOS-*
+			yum clean all && yum makecache
+			dnf swap centos-linux-repos centos-stream-repos distro-sync -y
+		else
+			red "已取消升级过程，脚本即将退出！"
+			exit 1
+		fi
+	fi
+}
 
 archAffix() {
 	case "$cpuArch" in
@@ -221,4 +239,5 @@ menu() {
 }
 
 archAffix
+checkCentOS8
 menu
