@@ -33,6 +33,8 @@ Booker——知识博客：https://www.dll3.cn/534.html
 
 lxxself: https://lxx.im/cloudflare-tunnel
 
+yuuki410 fork的分支：https://github.com/yuuki410/argo-tunnel-script
+
 ## 交流群
 
 [Telegram](https://t.me/misakanetcn)
