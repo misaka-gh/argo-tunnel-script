@@ -71,7 +71,7 @@ archAffix() {
 		i686 | i386) cpuArch='386' ;;
 		x86_64 | amd64) cpuArch='amd64' ;;
 		armv5tel | arm6l | armv7 | armv7l) cpuArch='arm' ;;
-		armv8 | aarch64) cpuArch='aarch64' ;;
+		armv8 | arm64 | aarch64) cpuArch='aarch64' ;;
 		*) red "不支持的CPU架构！" && exit 1 ;;
 	esac
 }
@@ -93,29 +93,36 @@ checkStatus() {
 }
 
 installCloudFlared() {
-	[ $cloudflaredStatus == "已安装" ] && red "检测到已安装并登录CloudFlare Argo Tunnel，无需重复安装！！" && exit 1
-	if [ ${RELEASE[int]} == "CentOS" ]; then
-		[ $cpuArch == "amd64" ] && cpuArch="x86_64"
-		wget -N https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpuArch.rpm
-		rpm -i cloudflared-linux-$cpuArch.rpm
-		rm -f cloudflared-linux-$cpuArch.rpm
-	else
-		[ $cpuArch == "aarch64" ] && cpuArch="arm64"
-		wget -N https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpuArch.deb
-		dpkg -i cloudflared-linux-$cpuArch.deb
-		rm -f cloudflared-linux-$cpuArch.deb
-	fi
-	green "请访问下方提示的网址，登录自己的CloudFlare账号"
-	green "然后授权自己的域名给CloudFlare Argo Tunnel即可"
+	[[ $cloudflaredStatus == "已安装" ]] && red "检测到已安装并登录CloudFlare Argo Tunnel，无需重复安装！！" && exit 1
+	wget -N --no-check-certificate https://github.com/cloudflare/cloudflared/latest/download/2022.5.3/cloudflared-linux-$(archAffix) -O /usr/local/bin/cloudflared
+	chmod +x /usr/local/bin/cloudflared
+}
+
+loginCloudFlared(){
+	[[ $loginStatus == "已登录" ]] && red "检测到已登录CloudFlare Argo Tunnel，无需重复登录！！" && exit 1
 	cloudflared tunnel login
-	back2menu
+	checkStatus
+	if [[ $cloudflaredStatus == "未登录" ]]; then
+		red "登录CloudFlare Argo Tunnel失败！！"
+		back2menu
+	else
+		green "登录CloudFlare Argo Tunnel成功！！"
+		back2menu
+	fi
 }
 
 uninstallCloudFlared() {
-	[ $cloudflaredStatus == "未安装" ] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
-	${PACKAGE_REMOVE[int]} cloudflared
+	[[ $cloudflaredStatus == "未安装" ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+	rm -f /usr/local/bin/cloudflared
 	rm -rf /root/.cloudflared
 	yellow "CloudFlared 客户端已卸载成功"
+}
+
+listTunnel() {
+	[[ $cloudflaredStatus == "未安装" ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+	[[ $loginStatus == "未登录" ]] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
+	cloudflared tunnel list
+	back2menu
 }
 
 makeTunnel() {
@@ -124,13 +131,17 @@ makeTunnel() {
 	read -p "请输入域名：" tunnelDomain
 	cloudflared tunnel route dns $tunnelName $tunnelDomain
 	cloudflared tunnel list
+	# 感谢yuuki410在其分支中提取隧道UUID的代码
+	# Source: https://github.com/yuuki410/argo-tunnel-script
+	tunnelUUID=$( $(cloudflared tunnel list | grep $tunnelName) = /[0-9a-f\-]+/)
 	read -p "请输入隧道UUID（复制ID里面的内容）：" tunnelUUID
 	read -p "请输入传输协议（默认http）：" tunnelProtocol
-	[ -z $tunnelProtocol ] && tunnelProtocol="http"
+	[[ -z $tunnelProtocol ]] && tunnelProtocol="http"
 	read -p "请输入反代端口（默认80）：" tunnelPort
-	[ -z $tunnelPort ] && tunnelPort=80
-	read -p "请输入将要保存的配置文件名：" tunnelFileName
-	cat <<EOF >~/$tunnelFileName.yml
+	[[ -z $tunnelPort ]] && tunnelPort=80
+	read -p "请输入保存的配置文件名（默认：$tunnelFileName）：" tunnelFileName
+	[[ -z $tunnelFileName ]] && tunnelFileName = $tunnelName
+	cat <<EOF > ~/$tunnelFileName.yml
 tunnel: $tunnelName
 credentials-file: /root/.cloudflared/$tunnelUUID.json
 originRequest:
@@ -141,20 +152,13 @@ ingress:
     service: $tunnelProtocol://localhost:$tunnelPort
   - service: http_status:404
 EOF
-	green "配置文件生成成功，已保存为 /root/$tunnelFileName.yml"
-	back2menu
-}
-
-listTunnel() {
-	[ $cloudflaredStatus == "未安装" ] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
-	[ $loginStatus == "未登录" ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
-	cloudflared tunnel list
+	green "配置文件已保存至 /root/$tunnelFileName.yml"
 	back2menu
 }
 
 runTunnel() {
-	[ $cloudflaredStatus == "未安装" ] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
-	[ $loginStatus == "未登录" ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
+	[[ $cloudflaredStatus == "未安装" ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+	[[ $loginStatus == "未登录" ]] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
 	[[ -z $(type -P screen) ]] && ${PACKAGE_UPDATE[int]} && ${PACKAGE_INSTALL[int]} screen
 	read -p "请复制粘贴配置文件的位置（例：/root/tunnel.yml）：" ymlLocation
 	read -p "请输入创建Screen会话的名字：" screenName
@@ -164,8 +168,8 @@ runTunnel() {
 }
 
 killTunnel() {
-	[ $cloudflaredStatus == "未安装" ] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
-	[ $loginStatus == "未登录" ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
+	[[ $cloudflaredStatus == "未安装" ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+	[[ $loginStatus == "未登录" ]] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
 	[[ -z $(type -P screen) ]] && ${PACKAGE_UPDATE[int]} && ${PACKAGE_INSTALL[int]} screen
 	read -p "请输入需要删除的Screen会话名字：" screenName
 	screen -S $screenName -X quit
@@ -174,16 +178,16 @@ killTunnel() {
 }
 
 deleteTunnel() {
-	[ $cloudflaredStatus == "未安装" ] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
-	[ $loginStatus == "未登录" ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
+	[[ $cloudflaredStatus == "未安装" ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+	[[ $loginStatus == "未登录" ]] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
 	read -p "请输入需要删除的隧道名称：" tunnelName
 	cloudflared tunnel delete $tunnelName
 	back2menu
 }
 
 argoCert() {
-	[ $cloudflaredStatus == "未安装" ] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
-	[ $loginStatus == "未登录" ] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
+	[[ $cloudflaredStatus == "未安装" ]] && red "检测到未安装CloudFlare Argo Tunnel客户端，无法执行操作！！！" && exit 1
+	[[ $loginStatus == "未登录" ]] && red "请登录CloudFlare Argo Tunnel客户端后再执行操作！！！" && exit 1
 	sed -n "1, 5p" /root/.cloudflared/cert.pem >>/root/private.key
 	sed -n "6, 24p" /root/.cloudflared/cert.pem >>/root/cert.crt
 	green "CloudFlare Argo Tunnel证书提取成功！"
@@ -196,44 +200,44 @@ argoCert() {
 }
 
 menu() {
-	clear
 	checkStatus
-	red "=================================="
-	echo "                           "
-	red "  CloudFlare Argo Tunnel一键脚本   "
-	red "          by 小御坂的破站           "
-	echo "                           "
-	red "  Site: https://owo.misaka.rest  "
-	echo "                           "
-	red "=================================="
-	echo "            "
-	yellow "今日运行次数：$TODAY   总共运行次数：$TOTAL"
-	echo "            "
-	green "CloudFlared 客户端状态：$cloudflaredStatus"
-	green "账户登录状态：$loginStatus"
-	echo "            "
-	echo "1. 安装并登录CloudFlared客户端"
-	echo "2. 配置Argo Tunnel隧道"
-	echo "3. 列出Argo Tunnel隧道"
-	echo "4. 运行Argo Tunnel隧道"
-	echo "5. 停止Argo Tunnel隧道"
-	echo "6. 删除Argo Tunnel隧道"
-	echo "7. 获取Argo Tunnel证书"
-	echo "8. 卸载CloudFlared客户端"
-	echo "9. 更新脚本"
-	echo "0. 退出脚本"
-	echo "          "
-	read -p "请输入选项:" menuNumberInput
-	case "$menuNumberInput" in
+	clear
+	echo "#############################################################"
+	echo -e "#           ${RED}CloudFlare Argo Tunnel 一键配置脚本${PLAIN}             #"
+	echo -e "# ${GREEN}作者${PLAIN}: Misaka No                                           #"
+	echo -e "# ${GREEN}网址${PLAIN}: https://owo.misaka.rest                             #"
+	echo -e "# ${GREEN}论坛${PLAIN}: https://vpsgo.co                                    #"
+	echo -e "# ${GREEN}TG群${PLAIN}: https://t.me/misakanetcn                            #"
+	echo "#############################################################"
+	echo ""
+	echo -e " ${GREEN}1.${PLAIN} 安装 CloudFlare Argo Tunnel"
+	echo -e " ${GREEN}2.${PLAIN} 登录 CloudFlare Argo Tunnel"
+	echo -e " ${GREEN}3.${PLAIN} ${RED}卸载 CloudFlare Argo Tunnel${PLAIN}"
+	echo " -------------"
+	echo -e " ${GREEN}4.${PLAIN} 查看账户内 Argo Tunnel 列表"
+	echo " -------------"
+	echo -e " ${GREEN}5.${PLAIN} 创建 Argo Tunnel 隧道"
+	echo -e " ${GREEN}6.${PLAIN} 运行 Argo Tunnel 隧道"
+	echo -e " ${GREEN}7.${PLAIN} 停止 Argo Tunnel 隧道"
+	echo -e " ${GREEN}8.${PLAIN} ${RED}删除 Argo Tunnel 隧道${PLAIN}"
+	echo " -------------"
+	echo -e " ${GREEN}9.${PLAIN} 提取 Argo Tunnel 证书"
+	echo -e " ${GREEN}0.${PLAIN} 退出脚本"
+	echo ""
+	echo -e "CloudFlared 客户端状态：$cloudflaredStatus   账户登录状态：$loginStatus"
+	echo -e "今日运行次数：$TODAY   总共运行次数：$TOTAL"
+	echo ""
+	read -rp "请输入选项 [0-9]: " menuChoice
+	case $menuChoice in
 		1) installCloudFlared ;;
-		2) makeTunnel ;;
-		3) listTunnel ;;
-		4) runTunnel ;;
-		5) killTunnel ;;
-		6) deleteTunnel ;;
-		7) argoCert ;;
-		8) uninstallCloudFlared ;;
-		9) wget -N https://raw.githubusercontent.com/Misaka-blog/argo-tunnel-script/master/argo.sh && bash argo.sh ;;
+		2) loginCloudFlared ;;
+		3) uninstallCloudFlared ;;
+		4) listTunnel ;;
+		5) makeTunnel ;;
+		6) runTunnel ;;
+		7) killTunnel ;;
+		8) deleteTunnel ;;
+		9) argoCert ;;
 		*) exit 1 ;;
 	esac
 }
