@@ -1,15 +1,19 @@
 #!/bin/bash
 
-# 控制台字体
-red() {
+RED="\033[31m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+PLAIN="\033[0m"
+
+red(){
 	echo -e "\033[31m\033[01m$1\033[0m"
 }
 
-green() {
+green(){
 	echo -e "\033[32m\033[01m$1\033[0m"
 }
 
-yellow() {
+yellow(){
 	echo -e "\033[33m\033[01m$1\033[0m"
 }
 
@@ -22,10 +26,6 @@ PACKAGE_REMOVE=("apt -y remove" "apt -y remove" "yum -y remove" "yum -y remove")
 
 # 判断系统CPU架构
 cpuArch=$(uname -m)
-
-# 判断cloudflared状态
-cloudflaredStatus="未安装"
-loginStatus="未登录"
 
 # 判断是否为root用户
 [[ $EUID -ne 0 ]] && yellow "请在root用户下运行脚本" && exit 1
